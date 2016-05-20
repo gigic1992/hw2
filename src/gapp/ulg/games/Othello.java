@@ -169,8 +169,15 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     @Override
     public Set<Move<PieceModel<Species>>> validMoves() {
         if (turnoG==0){throw new IllegalArgumentException("il gioco è terminato.");}
-
-    }
+        List<Board.Dir> direzioni= Arrays.asList(Board.Dir.DOWN, Board.Dir.DOWN_L, Board.Dir.DOWN_R, Board.Dir.LEFT, Board.Dir.RIGHT, Board.Dir.UP, Board.Dir.UP_L, Board.Dir.UP_R);
+        for (Pos p : tavolo.positions()){
+            if(tavolo.get(p)==null){
+                PieceModel<Species> disco1=new PieceModel<>(Species.DISC,)
+                for (Board.Dir d:direzioni){
+                    tavolo.adjacent(p,d)}
+                }
+            }
+        }
 
     @Override
     public double score(int i) {
