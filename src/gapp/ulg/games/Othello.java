@@ -168,7 +168,7 @@ public class Othello implements GameRuler<PieceModel<Species>> {
      * {@link Action.Kind#SWAP}. */
     @Override
     public Set<Move<PieceModel<Species>>> validMoves() {
-        if (turnoG==0){throw new IllegalArgumentException("il gioco è terminato");}
+        if (turnoG==0){throw new IllegalArgumentException("il gioco è terminato.");}
 
     }
 
