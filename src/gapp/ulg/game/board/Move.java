@@ -117,7 +117,7 @@ public class Move<P> {
         return kind;
     }
 
-    public List getActions() {
+    public List<Action<P>> getActions() {
         return actions;
     }
 

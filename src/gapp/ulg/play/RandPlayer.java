@@ -63,6 +63,9 @@ public class RandPlayer<P> implements Player<P> {
         Random k=new Random();
         Move mossa = null;
         mossa= (Move) listaMosse.get(k.nextInt(n));
+        while (mossa.getKind()== Move.Kind.RESIGN){
+            mossa=(Move) listaMosse.get(k.nextInt(n));
+        }
         return mossa;
     }
 }

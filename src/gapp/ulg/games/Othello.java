@@ -7,7 +7,6 @@ import gapp.ulg.play.RandPlayer;
 
 import static gapp.ulg.game.board.PieceModel.Species;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 
@@ -52,6 +51,7 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     private Player<PieceModel<Species>> giocatore2;
     private Board<PieceModel<Species>> tavolo;
     private int turnoG;
+    private int vtavolino;
     /** Crea un GameRuler per fare una partita a Othello, equivalente a
      * {@link Othello#Othello(long, int, String, String) Othello(0,8,p1,p2)}.
      * @param p1  il nome del primo giocatore
@@ -71,14 +71,14 @@ public class Othello implements GameRuler<PieceModel<Species>> {
      * @throws IllegalArgumentException se size non è uno dei valori 6,8,10 o 12 */
     public Othello(long time, int size, String p1, String p2){
         if(!Arrays.asList(6,8,10,12).contains(size)){ throw new IllegalArgumentException("la dimensione non è consentita"); }
-            if (p1 == null || p2 == null) {
-                throw new NullPointerException("nessun giocatore può essere nullo");}
+        if (p1 == null || p2 == null) { throw new NullPointerException("nessun giocatore può essere nullo");}
         this.giocatore1=new RandPlayer<>(p1);
         this.giocatore2=new RandPlayer<>(p2);
         this.size=size;
         this.time=time;
         this.tavolo=new BoardOct<PieceModel<Species>>(size,size);
         this.turnoG=1;
+        this.vtavolino=-1;
         this.tavolo.put(new PieceModel<Species>(Species.DISC,"bianco"),new Pos((size/2)-1,size/2));
         this.tavolo.put(new PieceModel<Species>(Species.DISC,"nero"),new Pos(size/2,size/2));
         this.tavolo.put(new PieceModel<Species>(Species.DISC,"nero"),new Pos((size/2)-1,(size/2)-1));
@@ -110,7 +110,7 @@ public class Othello implements GameRuler<PieceModel<Species>> {
         if (name==null){throw new NullPointerException("il nome non può essre nullo");}
         if (!players().contains(name)) {
             throw new IllegalArgumentException("il nome di entrambi i giocatori non corrisponde");}
-        if(giocatore1.name()==name){return "nero";}
+        if(giocatore1.name().equals(name)){return "nero";}
         return "bianco";
     }
     @Override
@@ -139,6 +139,35 @@ public class Othello implements GameRuler<PieceModel<Species>> {
      * giocatore. */
     @Override
     public boolean move(Move<PieceModel<Species>> m) {
+        if(m==null){throw new NullPointerException("la mossa non può essere nulla");}
+        if(turnoG==0){throw new IllegalStateException("il gioco è terminato");}
+        if(isValid(m) && m.getKind()!=Move.Kind.RESIGN){
+            for(Action a : m.getActions()){
+                if(a.getKind() == Action.Kind.ADD) { tavolo.put((PieceModel) a.getPiece(), (Pos) a.getPos().get(0)); }
+                if(a.getKind() == Action.Kind.SWAP) {
+                    for (Object p:a.getPos()){
+                        tavolo.put((PieceModel)a.getPiece(),(Pos)p);
+                    }
+                }
+            }
+            if(turnoG==1){
+                turnoG=2;
+            }
+            else if (turnoG==2){
+                turnoG=1;
+            }
+            return true;
+        }
+        if(m.getKind()== Move.Kind.RESIGN){
+            if(turnoG==2){vtavolino=1;}
+            vtavolino=2;
+            turnoG = 0; return true;
+        }
+        int other = 0;
+        if(turnoG==2){other=1;}
+        other=2;
+        vtavolino = other;
+        turnoG = 0;
         return false;
     }
 
@@ -157,8 +186,9 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     @Override
     public int result() {
         if (turnoG!=0){return -1; }
-        if(score(1)==score(2)){return 0;}
-        if ( score(1)>score(2)){return 1;}
+        else if(vtavolino!=-1){ return vtavolino; }
+        else if(score(1)==score(2)){return 0;}
+        else if ( score(1)>score(2)){return 1;}
         return 2;
     }
 
@@ -168,17 +198,65 @@ public class Othello implements GameRuler<PieceModel<Species>> {
      * {@link Action.Kind#SWAP}. */
     @Override
     public Set<Move<PieceModel<Species>>> validMoves() {
-        if (turnoG==0){throw new IllegalArgumentException("il gioco è terminato.");}
-        List<Board.Dir> direzioni= Arrays.asList(Board.Dir.DOWN, Board.Dir.DOWN_L, Board.Dir.DOWN_R, Board.Dir.LEFT, Board.Dir.RIGHT, Board.Dir.UP, Board.Dir.UP_L, Board.Dir.UP_R);
-        for (Pos p : tavolo.positions()){
-            if(tavolo.get(p)==null){
-                PieceModel<Species> disco1=new PieceModel<>(Species.DISC,)
-                for (Board.Dir d:direzioni){
-                    tavolo.adjacent(p,d)}
+        if (turnoG == 0) {
+            throw new IllegalStateException("il gioco è terminato.");
+        }
+        List<Board.Dir> direzioni = Arrays.asList(Board.Dir.DOWN, Board.Dir.DOWN_L, Board.Dir.DOWN_R, Board.Dir.LEFT, Board.Dir.RIGHT, Board.Dir.UP, Board.Dir.UP_L, Board.Dir.UP_R);
+        Set<Move<PieceModel<Species>>> finale = new HashSet<>();
+        PieceModel<Species> disco1 = new PieceModel<>(Species.DISC, "nero");
+        PieceModel<Species> disco2 = new PieceModel<>(Species.DISC, "bianco");
+        if (turnoG == 2) {
+            disco1 = new PieceModel<>(Species.DISC, "bianco");
+            disco2 = new PieceModel<>(Species.DISC, "nero");
+        }
+        for (Pos p : tavolo.positions()) {
+            if (tavolo.get(p) == null) {
+                Set<Pos> lista_swap = new HashSet<>();
+                for (Board.Dir d : direzioni) {
+                    Set<Pos> lista_swapt = new HashSet<>();
+                    try {
+                        if (tavolo.get(tavolo.adjacent(p, d)).equals(disco2)) {
+                            Pos temporanea = tavolo.adjacent(p, d);
+                            while (true) {
+                                if (tavolo.get(temporanea) == null) {
+                                    lista_swapt = new HashSet<>();
+                                    break;
+                                }
+                                if (tavolo.get(temporanea).equals(disco1)) {
+                                    break;
+                                }
+                                if (tavolo.adjacent(temporanea, d) == null) {
+                                    lista_swapt = new HashSet<>();
+                                    break;
+                                }
+                                if (tavolo.get(temporanea).equals(disco2)) {
+                                    lista_swapt.add(temporanea);
+                                    temporanea = tavolo.adjacent(temporanea, d);
+                                }
+                            }
+                        }
+
+                    } catch (NullPointerException f) {
+                        continue;
+                    }
+                    if (lista_swapt.size() != 0) {
+                        lista_swap.addAll(lista_swapt);
+                    }
+                }
+                if (lista_swap.size() != 0) {
+                    Pos[] arrayp=new Pos[lista_swap.size()];
+                    arrayp=lista_swap.toArray(arrayp);
+                    Action prima= new Action(p,disco1);
+                    Action seconda= new Action(disco1,arrayp);
+                    finale.add(new Move(Arrays.asList(prima,seconda)));
                 }
             }
         }
-
+        if(finale.size()!=0){
+            finale.add(new Move(Move.Kind.RESIGN));
+        }
+        return Collections.unmodifiableSet(finale);
+    }
     @Override
     public double score(int i) {
         if (turnoG <= 0 || turnoG > 2) {
@@ -197,3 +275,64 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     @Override
     public Mechanics<PieceModel<Species>> mechanics() {return null; }
 }
+
+/*
+if (turnoG == 0) {
+            throw new IllegalStateException("il gioco è terminato.");
+        }
+        List<Board.Dir> direzioni = Arrays.asList(Board.Dir.DOWN, Board.Dir.DOWN_L, Board.Dir.DOWN_R, Board.Dir.LEFT, Board.Dir.RIGHT, Board.Dir.UP, Board.Dir.UP_L, Board.Dir.UP_R);
+        Set<Move<PieceModel<Species>>> finale = new HashSet<>();
+        PieceModel<Species> disco1 = new PieceModel<>(Species.DISC, "nero");
+        PieceModel<Species> disco2 = new PieceModel<>(Species.DISC, "bianco");
+        if (turnoG == 2) {
+            disco1 = new PieceModel<>(Species.DISC, "bianco");
+            disco2 = new PieceModel<>(Species.DISC, "nero");
+        }
+        for (Pos p : tavolo.positions()) {
+            if (tavolo.get(p) == null) {
+                Set<Pos> lista_swap = new HashSet<>();
+                for (Board.Dir d : direzioni) {
+                    Set<Pos> lista_swapt = new HashSet<>();
+                    try {
+                        if (tavolo.get(tavolo.adjacent(p, d)).equals(disco2)) {
+                            Pos temporanea = tavolo.adjacent(p, d);
+                            while (true) {
+                                if (tavolo.get(temporanea) == null) {
+                                    lista_swapt = new HashSet<>();
+                                    break;
+                                }
+                                if (tavolo.get(temporanea).equals(disco1)) {
+                                    break;
+                                }
+                                if (tavolo.adjacent(temporanea, d) == null) {
+                                    lista_swapt = new HashSet<>();
+                                    break;
+                                }
+                                if (tavolo.get(temporanea).equals(disco2)) {
+                                    lista_swapt.add(temporanea);
+                                    temporanea = tavolo.adjacent(temporanea, d);
+                                }
+                            }
+                        }
+
+                    } catch (NullPointerException f) {
+                        continue;
+                    }
+                    if (lista_swapt.size() != 0) {
+                        lista_swap.addAll(lista_swapt);
+                    }
+                }
+                if (lista_swap.size() != 0) {
+                    Pos[] arrayp=new Pos[lista_swap.size()];
+                    arrayp=lista_swap.toArray(arrayp);
+                    Action prima= new Action(p,disco1);
+                    Action seconda= new Action(disco1,arrayp);
+                    finale.add(new Move(Arrays.asList(prima,seconda)));
+                }
+            }
+        }
+        if(finale.size()!=0){
+            finale.add(new Move(Move.Kind.RESIGN));
+        }
+        return Collections.unmodifiableSet(finale);
+ */

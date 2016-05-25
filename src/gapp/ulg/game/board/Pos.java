@@ -19,12 +19,11 @@ public class Pos implements Serializable {
      * @param t  coordinata asse trasversale (non negativa)
      * @throws IllegalArgumentException se una delle coordinate è nagativa */
     public Pos(int b, int t) {
-        this.b=b;
-        this.t=t;
         if (b <0 || t<0){
             throw new IllegalArgumentException("Entrambe le coordinate devono essere interi positivi");
-
         }
+        this.b=b;
+        this.t=t;
     }
     public int getB(){return b; }
     public int getT(){return t; }

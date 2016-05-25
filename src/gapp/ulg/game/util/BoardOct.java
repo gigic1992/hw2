@@ -84,7 +84,7 @@ public class BoardOct<P> implements Board<P> {
                     return temp;
                 }
             }
-            if(d==Dir.DOWN&&p.getT()>=0) {
+            if(d==Dir.DOWN&&p.getT()-1>=0) {
                 Pos temp = new Pos(p.getB(),p.getT()-1);
                 if (posizioni.containsKey(temp)){
                     return temp;
@@ -102,7 +102,7 @@ public class BoardOct<P> implements Board<P> {
                     return temp;
                 }
             }
-            if(d==Dir.UP_L &&p.getB()>=0) {
+            if(d==Dir.UP_L &&p.getB()-1>=0) {
                 Pos temp = new Pos(p.getB()-1,p.getT()+1);
                 if (posizioni.containsKey(temp)){
                     return temp;
@@ -114,13 +114,13 @@ public class BoardOct<P> implements Board<P> {
                     return temp;
                 }
             }
-            if(d==Dir.DOWN_L&&p.getB()>=0&&p.getT()>=0) {
+            if(d==Dir.DOWN_L&&p.getB()-1>=0&&p.getT()-1>=0) {
                 Pos temp = new Pos(p.getB()-1,p.getT()-1);
                 if (posizioni.containsKey(temp)){
                     return temp;
                 }
             }
-            if(d==Dir.DOWN_R&&p.getT()>=0) {
+            if(d==Dir.DOWN_R&&p.getT()-1>=0) {
                 Pos temp = new Pos(p.getB()+1,p.getT()-1);
                 if (posizioni.containsKey(temp)){
                     return temp;
