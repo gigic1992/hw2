@@ -108,12 +108,10 @@ public interface GameRuler<P> {
      * @throws NullPointerException se m è null
      * @throws IllegalStateException se il gioco è terminato */
     default boolean isValid(Move<P> m) {
-        if (result()>0){throw new IllegalArgumentException("il gioco è terminato");}
+        if (result()>-1){throw new IllegalStateException("il gioco è terminato");}
         if (m==null){throw new NullPointerException("la mossa non può essere nulla");}
-        for(Move i :validMoves()){
-            if(m.equals(i)){return true;}
-
-        }return false;
+        if(validMoves().contains(m)) { return true; }
+        return false;
     }
 
     /** Ritorna l'insieme delle mosse valide relative alla posizione p. Se nella
@@ -134,7 +132,7 @@ public interface GameRuler<P> {
     default Set<Move<P>> validMoves(Pos p) {
         if(p==null){throw new NullPointerException("p non può essere nullo");}
         if(!getBoard().isPos(p)){throw new IllegalArgumentException("la posizione non fa parte della board");}
-        if (result()>0){throw new IllegalArgumentException("il gioco è terminato");}
+        if (result()>-1){throw new IllegalStateException("il gioco è terminato");}
         Set<Move<P>> luigi=new HashSet<>();
         if(getBoard().get(p)!=null){
             for (Move i:validMoves()){

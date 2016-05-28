@@ -52,6 +52,7 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     private Board<PieceModel<Species>> tavolo;
     private int turnoG;
     private int vtavolino;
+    private List<Board> luigi;
     /** Crea un GameRuler per fare una partita a Othello, equivalente a
      * {@link Othello#Othello(long, int, String, String) Othello(0,8,p1,p2)}.
      * @param p1  il nome del primo giocatore
@@ -83,6 +84,8 @@ public class Othello implements GameRuler<PieceModel<Species>> {
         this.tavolo.put(new PieceModel<Species>(Species.DISC,"nero"),new Pos(size/2,size/2));
         this.tavolo.put(new PieceModel<Species>(Species.DISC,"nero"),new Pos((size/2)-1,(size/2)-1));
         this.tavolo.put(new PieceModel<Species>(Species.DISC,"bianco"),new Pos(size/2,(size/2)-1));
+        this.luigi=new ArrayList<>();
+        luigi.add(tavolo);
         this.giocatore1.setGame(this);
         this.giocatore2.setGame(this);
         }
@@ -121,17 +124,6 @@ public class Othello implements GameRuler<PieceModel<Species>> {
      * non ha mosse valide, la partita termina. */
     @Override
     public int turn() {
-        if (turnoG==1 && validMoves().size()==0) {
-            turnoG = 2;
-            if (turnoG == 2 && validMoves().size() == 0) {
-                turnoG = 0;
-            }
-            return turnoG;
-        }
-        if (turnoG==2&& validMoves().size()==0){
-            turnoG=1;
-            if(turnoG==1 && validMoves().size()==0){turnoG=0;}
-            return turnoG;}
         return turnoG;
     }
 
@@ -156,11 +148,20 @@ public class Othello implements GameRuler<PieceModel<Species>> {
             else if (turnoG==2){
                 turnoG=1;
             }
+            if(validMoves().isEmpty()){
+                if(turnoG==1){
+                    turnoG=2;
+                }
+                else if (turnoG==2){
+                    turnoG=1;
+                }
+                if(validMoves().isEmpty()) { turnoG = 0; }
+            }
             return true;
         }
         if(m.getKind()== Move.Kind.RESIGN){
             if(turnoG==2){vtavolino=1;}
-            vtavolino=2;
+            else if(turnoG == 1) {vtavolino=2;}
             turnoG = 0; return true;
         }
         int other = 0;
@@ -259,7 +260,7 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     }
     @Override
     public double score(int i) {
-        if (turnoG <= 0 || turnoG > 2) {
+        if (turnoG < 0 || turnoG > 2) {
             throw new IllegalArgumentException("l'indice non identifica alcun giocatore");
         }
         int sg1= tavolo.get(new PieceModel<Species>(Species.DISC,"nero")).size();
@@ -269,70 +270,27 @@ public class Othello implements GameRuler<PieceModel<Species>> {
     }
     @Override
     public GameRuler<PieceModel<Species>> copy() {
-        return null;
-    }
-
-    @Override
-    public Mechanics<PieceModel<Species>> mechanics() {return null; }
-}
-
-/*
-if (turnoG == 0) {
-            throw new IllegalStateException("il gioco è terminato.");
-        }
-        List<Board.Dir> direzioni = Arrays.asList(Board.Dir.DOWN, Board.Dir.DOWN_L, Board.Dir.DOWN_R, Board.Dir.LEFT, Board.Dir.RIGHT, Board.Dir.UP, Board.Dir.UP_L, Board.Dir.UP_R);
-        Set<Move<PieceModel<Species>>> finale = new HashSet<>();
-        PieceModel<Species> disco1 = new PieceModel<>(Species.DISC, "nero");
-        PieceModel<Species> disco2 = new PieceModel<>(Species.DISC, "bianco");
-        if (turnoG == 2) {
-            disco1 = new PieceModel<>(Species.DISC, "bianco");
-            disco2 = new PieceModel<>(Species.DISC, "nero");
-        }
-        for (Pos p : tavolo.positions()) {
-            if (tavolo.get(p) == null) {
-                Set<Pos> lista_swap = new HashSet<>();
-                for (Board.Dir d : direzioni) {
-                    Set<Pos> lista_swapt = new HashSet<>();
-                    try {
-                        if (tavolo.get(tavolo.adjacent(p, d)).equals(disco2)) {
-                            Pos temporanea = tavolo.adjacent(p, d);
-                            while (true) {
-                                if (tavolo.get(temporanea) == null) {
-                                    lista_swapt = new HashSet<>();
-                                    break;
-                                }
-                                if (tavolo.get(temporanea).equals(disco1)) {
-                                    break;
-                                }
-                                if (tavolo.adjacent(temporanea, d) == null) {
-                                    lista_swapt = new HashSet<>();
-                                    break;
-                                }
-                                if (tavolo.get(temporanea).equals(disco2)) {
-                                    lista_swapt.add(temporanea);
-                                    temporanea = tavolo.adjacent(temporanea, d);
-                                }
-                            }
-                        }
-
-                    } catch (NullPointerException f) {
-                        continue;
-                    }
-                    if (lista_swapt.size() != 0) {
-                        lista_swap.addAll(lista_swapt);
-                    }
-                }
-                if (lista_swap.size() != 0) {
-                    Pos[] arrayp=new Pos[lista_swap.size()];
-                    arrayp=lista_swap.toArray(arrayp);
-                    Action prima= new Action(p,disco1);
-                    Action seconda= new Action(disco1,arrayp);
-                    finale.add(new Move(Arrays.asList(prima,seconda)));
+        Board board1=new BoardOct(size,size);
+        for(int i =0;i<size;i++){
+            for(int h=0;h<size;h++){
+                Pos p= new Pos(i,h);
+                if (tavolo.get(p)!=null){
+                    board1.put(tavolo.get(p),p);
                 }
             }
         }
-        if(finale.size()!=0){
-            finale.add(new Move(Move.Kind.RESIGN));
-        }
-        return Collections.unmodifiableSet(finale);
- */
+        return new Othello(time,size,giocatore1,giocatore2,board1,turnoG,vtavolino,luigi);
+    }
+    private Othello(long t,int s, Player p1,Player p2, Board b2, int tg,int vt, List l){
+        this.time=t;
+        this.size=s;
+        this.giocatore1=p1;
+        this.giocatore2=p2;
+        this.tavolo=b2;
+        this.turnoG=tg;
+        this.vtavolino=vt;
+        this.luigi = l;
+    }
+    @Override
+    public Mechanics<PieceModel<Species>> mechanics() {return null; }
+}
