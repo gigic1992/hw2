@@ -8,6 +8,7 @@ import gapp.ulg.play.RandPlayer;
 import static gapp.ulg.game.board.PieceModel.Species;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 
 /** <b>IMPLEMENTARE I METODI SECONDO LE SPECIFICHE DATE NEI JAVADOC. Non modificare
@@ -305,6 +306,58 @@ public class Othello implements GameRuler<PieceModel<Species>> {
         this.vtavolino=vt;
         this.lista_stati = l;
     }
+
     @Override
-    public Mechanics<PieceModel<Species>> mechanics() {return null; }
+    public Mechanics<PieceModel<Species>> mechanics() {
+        List<PieceModel<Species>> pezziG= Arrays.asList(new PieceModel<>(Species.DISC,"bianco"),new PieceModel<>(Species.DISC,"nero"));
+        Map<Pos,PieceModel<Species>> posizioniI=new HashMap<>();
+        posizioniI.put(new Pos((size/2)-1, size/2), new PieceModel<>( Species.DISC, "bianco" ));
+        posizioniI.put(new Pos((size/2)-1, (size/2)-1), new PieceModel<>( Species.DISC, "nero" ));
+        posizioniI.put(new Pos((size/2), (size/2)-1), new PieceModel<>( Species.DISC, "bianco" ));
+        posizioniI.put(new Pos(size/2, size/2), new PieceModel<>(Species.DISC, "nero"));
+        Next<PieceModel<Species>> mossaSucc = s -> {
+            if (s == null) {throw new NullPointerException("La situazione non può essere nulla"); }
+            ConcurrentMap<Move<PieceModel<Species>>,Situation<PieceModel<Species>>> mossaSucc1 = new ConcurrentHashMap<>();
+            class Luigi implements Callable{
+                Move<PieceModel<Species>> mO;
+                GameRuler<PieceModel<Species>> gioco1;
+                Luigi(Move m,GameRuler g){
+                    this.mO=m;
+                    this.gioco1=g;
+                }
+                @Override
+                public Map<Move<PieceModel<Species>>, Situation<PieceModel<Species>>> call() throws Exception {
+                    Map<Move<PieceModel<Species>>, Situation<PieceModel<Species>>> risultato = new HashMap<>(); //Risultato
+                    gioco1.move(mO); Map<Pos, PieceModel<Species>> mSituazione = new HashMap<>();
+                    gioco1.getBoard().positions().stream().filter(p -> gioco1.getBoard().get(p) != null).forEach(p -> mSituazione.put(p, gioco1.getBoard().get(p)));
+                    risultato.put(mO, new Situation<>(mSituazione, gioco1.turn()));
+                    return risultato;
+                }
+            }
+
+            ExecutorService executor = Executors.newCachedThreadPool();
+            Set<Future<Map<Move<PieceModel<Species>>, Situation<PieceModel<Species>>>>> listFut = new HashSet<>();
+            for(Move<PieceModel<Species>> m : validMoves()) {
+                Callable<Map<Move<PieceModel<Species>>, Situation<PieceModel<Species>>>> callable = new Luigi(m, copy());
+                Future<Map<Move<PieceModel<Species>>, Situation<PieceModel<Species>>>> future = executor.submit(callable);
+                listFut.add(future);
+            }
+
+            for(Future<Map<Move<PieceModel<Species>>, Situation<PieceModel<Species>>>> future : listFut) {
+                try {
+                    mossaSucc1.putAll(future.get());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            executor.shutdown();
+            return mossaSucc1;
+        };
+
+        return new Mechanics<>(time, Collections.unmodifiableList(pezziG), tavolo.positions(), 2, new Situation<>(posizioniI, 1), mossaSucc);
+    }
 }
+

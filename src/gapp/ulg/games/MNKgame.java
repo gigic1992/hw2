@@ -1,6 +1,8 @@
 package gapp.ulg.games;
 
 import gapp.ulg.game.board.*;
+import gapp.ulg.game.util.BoardOct;
+import gapp.ulg.play.RandPlayer;
 
 import java.util.*;
 
@@ -23,6 +25,14 @@ import static gapp.ulg.game.board.PieceModel.Species;
  * Per ulteriori informazioni si può consultare
  * <a href="https://en.wikipedia.org/wiki/M,n,k-game">(m,n,k)-game</a> */
 public class MNKgame implements GameRuler<PieceModel<Species>> {
+    private long tempo;
+    private Board<PieceModel<Species>> tavolo;
+    private int turnoG;
+    private int larghezza;
+    private int altezza;
+    private int numeroM;
+    private Player<PieceModel<Species>> giocatore1;
+    private Player<PieceModel<Species>> giocatore2;
     /** Crea un {@code MNKgame} con le impostazioni date.
      * @param time  tempo in millisecondi per fare una mossa, se <= 0 significa nessun
      *              limite
@@ -35,7 +45,18 @@ public class MNKgame implements GameRuler<PieceModel<Species>> {
      * @throws IllegalArgumentException se i valori di {@code m,n,k} non soddisfano
      * le condizioni 1 <= {@code k} <= max{{@code M,N}} <= 20 e 1 <= min{{@code M,N}} */
     public MNKgame(long time, int m, int n, int k, String p1, String p2) {
-        throw new UnsupportedOperationException("DA IMPLEMENTARE");
+        if(p1==null||p2==null){throw new NullPointerException("nessun giocatore può essere nullo");}
+        if(m*n<20||k<1||k>20||m*n<1){throw new IllegalArgumentException("tutte le condizioni devono essere rispettate");}
+        this.tempo=time;
+        this.altezza=n;
+        this.larghezza=m;
+        this.giocatore1=new RandPlayer<>(p1);
+        this.giocatore2=new RandPlayer<>(p2);
+        this.numeroM=k;
+        this.tavolo=new BoardOct<PieceModel<Species>>(larghezza,altezza);
+        this.turnoG=1;
+        giocatore1.setGame(this);
+        giocatore2.setGame(this);
     }
 
     /** Il nome rispetta il formato:
@@ -45,8 +66,7 @@ public class MNKgame implements GameRuler<PieceModel<Species>> {
      * dove <code><i>M,N,K</i></code> sono i valori dei parametri M,N,K, ad es.
      * "4,5,4-game". */
     @Override
-    public String name() { throw new UnsupportedOperationException("DA IMPLEMENTARE"); }
-
+    public String name() { return String.valueOf(larghezza)+","+String.valueOf(altezza)+","+String.valueOf(numeroM)+"-game"; }
     @Override
     public <T> T getParam(String name, Class<T> c) {
         throw new UnsupportedOperationException("DA IMPLEMENTARE");

@@ -17,13 +17,10 @@ import java.util.List;
  * I {@link GameRuler} fabbricati dovrebbero essere oggetti {@link Othello}. */
 public class OthelloFactory implements GameFactory<GameRuler<PieceModel<Species>>> {
     private String[] a_Nomi;
-    private List<Param<String>> lista_p;
-
     /**
      * Crea una fattoria di {@link GameRuler} per giocare a Othello
      */
-    public OthelloFactory() {
-    }
+    public OthelloFactory() {}
 
     @Override
     public String name() {
